@@ -18,13 +18,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springside.modules.utils.collection.CollectionUtil;
 
-import com.alibaba.druid.util.StringUtils;
 import com.jd.open.api.sdk.internal.util.StringUtil;
 import com.kg.live.entity.ApiInfoEntity;
 import com.kg.live.entity.ApiInfoEntityExample;
 import com.kg.live.entity.MgApiUserEntity;
 import com.kg.live.entity.PlayerMgData;
 import com.kg.live.mapper.ApiInfoEntityMapper;
+import com.kg.live.mapper.MgApiUserEntityMapper;
 import com.kg.live.mapper.PlayerMgDataMapper;
 import com.mgdata.util.HttpsRequestUtil;
 import com.mgdata.util.LiveConfig;
@@ -38,6 +38,9 @@ public class PlayerMgDataService {
 
 	@Autowired
 	private PlayerMgDataMapper playerMgDataMapper;
+
+	@Autowired
+	private MgApiUserEntityMapper mgApiUserEntityMapper;
 
 	@PostConstruct
 	public void initapiInfoList() {
@@ -201,42 +204,53 @@ public class PlayerMgDataService {
 	}
 
 	public List<MgApiUserEntity> queryMgUserByProxy(ApiInfoEntity apiInfo) throws DocumentException {
+
+		List<MgApiUserEntity> tempList = mgApiUserEntityMapper.selectByAgentName(apiInfo.getAgent());
+
 		// 1:测试 代理的合法性
-		Map<String, Object> map = new HashMap();
-		List<MgApiUserEntity> tempList = new ArrayList();
-		map.put("param0", apiInfo.getAgent());
-		map.put("param1", apiInfo.getLiveKey());
-		String requestXML = HttpsRequestUtil.soapXMLReplace(LiveConfig.soapIsAuthenticateXMl, map);
-		String resultXML = HttpsRequestUtil.httpRequest(LiveConfig.SOAP_URL, "POST", requestXML, "IsAuthenticate");
-		logger.info("代理登录的XML请求: " + requestXML + " , 请求的地址为: " + LiveConfig.SOAP_URL + ", 请求的结果:" + resultXML);
-		map.clear();
-		if (StringUtils.isEmpty(resultXML)) {
-			return null;
-		}
-		String result = HttpsRequestUtil.getXMLValue(resultXML, "ErrorCode");
-		// result=0,代理登录成功，里面有SessionGUID
-		if (result.equalsIgnoreCase("0")) {
-			// 2 取得有次的玩家
-			String url = apiInfo.getReporturl() + "?proxyName=" + apiInfo.getAgent() + "&password=" + apiInfo.getLiveKey() + "&gameType=mg";
-
-			JSONArray object = HttpsRequestUtil.httpRequestJson(url, apiInfo.getAgent(), apiInfo.getLiveKey(), "POST", "", null);
-			if (null == object) {
-				logger.info("此轮请求的数据为空" + object);
-				return null;
-			}
-			logger.info("返回值为==" + object);
-			// JSONObject jStatus = object.getJSONObject("SUCCESS");
-			// JSONArray jsonArray = object.getJSONArray("list");//
-			// JSONArray.fromObject();
-			// String errCode = jStatus.getString("SUCCESS");
-			if (!StringUtil.isEmpty(object.toString())) {
-
-				tempList = (List<MgApiUserEntity>) JSONArray.toCollection(object, MgApiUserEntity.class);
-
-			} else {
-				return null;
-			}
-		}
+		// Map<String, Object> map = new HashMap();
+		// List<MgApiUserEntity> tempList = new ArrayList();
+		// map.put("param0", apiInfo.getAgent());
+		// map.put("param1", apiInfo.getLiveKey());
+		// String requestXML =
+		// HttpsRequestUtil.soapXMLReplace(LiveConfig.soapIsAuthenticateXMl,
+		// map);
+		// String resultXML = HttpsRequestUtil.httpRequest(LiveConfig.SOAP_URL,
+		// "POST", requestXML, "IsAuthenticate");
+		// logger.info("代理登录的XML请求: " + requestXML + " , 请求的地址为: " +
+		// LiveConfig.SOAP_URL + ", 请求的结果:" + resultXML);
+		// map.clear();
+		// if (StringUtils.isEmpty(resultXML)) {
+		// return null;
+		// }
+		// String result = HttpsRequestUtil.getXMLValue(resultXML, "ErrorCode");
+		// // result=0,代理登录成功，里面有SessionGUID
+		// if (result.equalsIgnoreCase("0")) {
+		// // 2 取得有次的玩家
+		// String url = apiInfo.getReporturl() + "?proxyName=" +
+		// apiInfo.getAgent() + "&password=" + apiInfo.getLiveKey() +
+		// "&gameType=mg";
+		//
+		// JSONArray object = HttpsRequestUtil.httpRequestJson(url,
+		// apiInfo.getAgent(), apiInfo.getLiveKey(), "POST", "", null);
+		// if (null == object) {
+		// logger.info("此轮请求的数据为空" + object);
+		// return null;
+		// }
+		// logger.info("返回值为==" + object);
+		// // JSONObject jStatus = object.getJSONObject("SUCCESS");
+		// // JSONArray jsonArray = object.getJSONArray("list");//
+		// // JSONArray.fromObject();
+		// // String errCode = jStatus.getString("SUCCESS");
+		// if (!StringUtil.isEmpty(object.toString())) {
+		//
+		// tempList = (List<MgApiUserEntity>) JSONArray.toCollection(object,
+		// MgApiUserEntity.class);
+		//
+		// } else {
+		// return null;
+		// }
+		// }
 
 		return tempList;
 	}
